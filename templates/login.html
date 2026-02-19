@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card login-card">
+    <h2>Login to AR Demo</h2>
+    <p>Simulate logging into the system.</p>
+    <form method="POST" action="{{ url_for('login') }}">
+        <button type="submit" class="btn btn-primary">Simulate Login</button>
+    </form>
+</div>
+{% endblock %}

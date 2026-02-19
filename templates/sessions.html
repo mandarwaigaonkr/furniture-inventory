@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Current Session Information</h2>
+<div class="card mt-2">
+    <h3>Active User Session</h3>
+    <p><strong>Login Time:</strong> {{ login_time }}</p>
+    <p>This session will remain active until you click logout.</p>
+</div>
+{% endblock %}

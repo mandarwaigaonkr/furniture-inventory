@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Furniture Management</h2>
+<div class="card mt-2">
+    <h3>Add New Furniture</h3>
+    <form method="POST" class="form-inline">
+        <div class="form-group"><label>Name</label><input type="text" name="furniture_name" required></div>
+        <div class="form-group"><label>Length</label><input type="number" step="0.1" name="length" required></div>
+        <div class="form-group"><label>Width</label><input type="number" step="0.1" name="width" required></div>
+        <div class="form-group"><label>Height</label><input type="number" step="0.1" name="height" required></div>
+        <button type="submit" class="btn btn-primary mt-align">Save Furniture</button>
+    </form>
+</div>
+<div class="card mt-2">
+    <h3>Existing Furniture</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Length</th><th>Width</th><th>Height</th></tr></thead>
+        <tbody>
+            {% for f in furniture %}
+            <tr><td>{{ f[0] }}</td><td>{{ f[1] }}</td><td>{{ f[2] }}</td><td>{{ f[3] }}</td><td>{{ f[4] }}</td></tr>
+            {% else %}
+            <tr><td colspan="5">No furniture found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
