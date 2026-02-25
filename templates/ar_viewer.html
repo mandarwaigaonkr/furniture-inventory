@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>AR Furniture Viewer</h2>
+
+{% if not rooms or not furniture %}
+<div class="card mt-2">
+    <p>Add at least one room and one furniture item to use AR Viewer.</p>
+</div>
+{% else %}
+<div class="card mt-2">
+    <h3>Choose Room and Furniture</h3>
+    <form method="GET" class="form-inline">
+        <div class="form-group">
+            <label>Room</label>
+            <select name="room_id" required>
+                {% for room in rooms %}
+                <option value="{{ room.id }}" {% if selected_room and room.id == selected_room.id %}selected{% endif %}>
+                    {{ room.name }} ({{ room.length }} x {{ room.width }} x {{ room.height }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Furniture</label>
+            <select name="furniture_id" required>
+                {% for item in furniture %}
+                <option value="{{ item.id }}" {% if selected_furniture and item.id == selected_furniture.id %}selected{% endif %}>
+                    {{ item.name }} ({{ item.length }} x {{ item.width }} x {{ item.height }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary mt-align">Load 3D Scene</button>
+    </form>
+</div>
+
+{% if selected_room and selected_furniture %}
+<div class="card mt-2">
+    <h3>Dimension Comparison</h3>
+    <p><strong>Room (L x W x H):</strong> {{ selected_room.length }} x {{ selected_room.width }} x {{ selected_room.height }}</p>
+    <p><strong>Furniture (L x W x H):</strong> {{ selected_furniture.length }} x {{ selected_furniture.width }} x {{ selected_furniture.height }}</p>
+    <div class="legend-row">
+        <span class="legend-item"><span class="legend-swatch legend-room"></span>Room boundary</span>
+        <span class="legend-item"><span class="legend-swatch legend-furniture"></span>Furniture footprint</span>
+    </div>
+    <div class="ar-container">
+        <canvas id="scene-canvas" class="scene-canvas" width="900" height="500"></canvas>
+    </div>
+    <div id="fit-result-card" class="fit-result-card mt-2">
+        <h3>Result:</h3>
+        <div id="fit-result-text" class="fit-result-text"></div>
+    </div>
+</div>
+
+<script>
+const room = {{ selected_room|tojson }};
+const furniture = {{ selected_furniture|tojson }};
+const canvas = document.getElementById('scene-canvas');
+const ctx = canvas.getContext('2d');
+
+function drawScene() {
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.fillStyle = '#dfe5e7';
+    ctx.fillRect(0, 0, w, h);
+
+    const roomScale = Math.min((w - 220) / Math.max(room.length, 1), (h - 150) / Math.max(room.width, 1));
+    const rw = room.length * roomScale;
+    const rh = room.width * roomScale;
+    const originX = (w - rw) / 2;
+    const originY = (h - rh) / 2;
+
+    ctx.strokeStyle = '#2f3847';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(originX, originY, rw, rh);
+
+    const furnW = Math.min((furniture.length / Math.max(room.length, 1)) * rw, rw);
+    const furnH = Math.min((furniture.width / Math.max(room.width, 1)) * rh, rh);
+    const furnX = originX;
+    const furnY = originY;
+
+    ctx.fillStyle = 'rgba(53, 180, 114, 0.65)';
+    ctx.fillRect(furnX, furnY, furnW, furnH);
+    ctx.strokeStyle = '#17844f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(furnX, furnY, furnW, furnH);
+
+    ctx.fillStyle = '#2f3847';
+    ctx.font = '26px Segoe UI, sans-serif';
+    ctx.fillText(`Room: ${room.length} x ${room.width}`, originX, originY - 12);
+    ctx.fillText(`Furniture: ${furniture.length} x ${furniture.width}`, originX, originY + rh + 34);
+}
+
+function updateFitResult() {
+    const fits = (
+        Number(furniture.length) <= Number(room.length) &&
+        Number(furniture.width) <= Number(room.width) &&
+        Number(furniture.height) <= Number(room.height)
+    );
+
+    const card = document.getElementById('fit-result-card');
+    const text = document.getElementById('fit-result-text');
+    card.classList.toggle('fit-yes', fits);
+    card.classList.toggle('fit-no', !fits);
+    text.textContent = fits ? 'FIT' : 'DOES NOT FIT';
+}
+
+drawScene();
+updateFitResult();
+</script>
+{% endif %}
+{% endif %}
+{% endblock %}

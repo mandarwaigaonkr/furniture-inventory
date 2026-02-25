@@ -259,6 +259,54 @@ def fit_checker():
     conn.close()
     return render_template('fit_checker.html', rooms=rooms_list, furniture=furniture_list, result=result_message, is_fit=is_fit)
 
+@app.route('/ar_viewer')
+def ar_viewer():
+    if 'login_time' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    if not conn:
+        flash("Database connection failed.", "error")
+        return redirect(url_for('dashboard'))
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT room_id, room_name, length, width, height FROM ROOM ORDER BY room_name")
+        rooms_rows = cursor.fetchall()
+        cursor.execute("SELECT furniture_id, furniture_name, length, width, height FROM FURNITURE ORDER BY furniture_name")
+        furniture_rows = cursor.fetchall()
+    except Exception as e:
+        cursor.close()
+        conn.close()
+        flash(f"Error loading AR data: {e}", "error")
+        return redirect(url_for('dashboard'))
+
+    cursor.close()
+    conn.close()
+
+    rooms_data = [
+        {"id": int(r[0]), "name": r[1], "length": float(r[2]), "width": float(r[3]), "height": float(r[4])}
+        for r in rooms_rows
+    ]
+    furniture_data = [
+        {"id": int(f[0]), "name": f[1], "length": float(f[2]), "width": float(f[3]), "height": float(f[4])}
+        for f in furniture_rows
+    ]
+
+    selected_room_id = request.args.get('room_id', type=int)
+    selected_furniture_id = request.args.get('furniture_id', type=int)
+
+    selected_room = next((r for r in rooms_data if r["id"] == selected_room_id), rooms_data[0] if rooms_data else None)
+    selected_furniture = next((f for f in furniture_data if f["id"] == selected_furniture_id), furniture_data[0] if furniture_data else None)
+
+    return render_template(
+        'ar_viewer.html',
+        rooms=rooms_data,
+        furniture=furniture_data,
+        selected_room=selected_room,
+        selected_furniture=selected_furniture
+    )
+
 @app.route('/sessions')
 def sessions_page():
     if 'login_time' not in session: return redirect(url_for('login'))
