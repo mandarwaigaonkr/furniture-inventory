@@ -14,12 +14,19 @@
 <div class="card mt-2">
     <h3>Existing Furniture</h3>
     <table>
-        <thead><tr><th>ID</th><th>Name</th><th>Length</th><th>Width</th><th>Height</th></tr></thead>
+        <thead><tr><th>ID</th><th>Name</th><th>Length</th><th>Width</th><th>Height</th><th>Action</th></tr></thead>
         <tbody>
             {% for f in furniture %}
-            <tr><td>{{ f[0] }}</td><td>{{ f[1] }}</td><td>{{ f[2] }}</td><td>{{ f[3] }}</td><td>{{ f[4] }}</td></tr>
+            <tr>
+                <td>{{ f[0] }}</td><td>{{ f[1] }}</td><td>{{ f[2] }}</td><td>{{ f[3] }}</td><td>{{ f[4] }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('delete_furniture', furniture_id=f[0]) }}" onsubmit="return confirm('Delete this furniture item?');">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
             {% else %}
-            <tr><td colspan="5">No furniture found.</td></tr>
+            <tr><td colspan="6">No furniture found.</td></tr>
             {% endfor %}
         </tbody>
     </table>

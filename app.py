@@ -9,10 +9,54 @@ app.secret_key = 'super_secret_key_for_demo'
 db_user = "system"
 db_password = "123456"
 
+def ensure_delete_archive_objects(conn):
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            BEGIN
+                EXECUTE IMMEDIATE '
+                    CREATE TABLE DELETED_ITEMS (
+                        source_table VARCHAR2(20) NOT NULL,
+                        source_id NUMBER NOT NULL,
+                        item_name VARCHAR2(100) NOT NULL,
+                        length NUMBER NOT NULL,
+                        width NUMBER NOT NULL,
+                        height NUMBER NOT NULL,
+                        deleted_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL
+                    )';
+            EXCEPTION
+                WHEN OTHERS THEN
+                    IF SQLCODE != -955 THEN RAISE; END IF;
+            END;
+        """)
+
+        cursor.execute("""
+            CREATE OR REPLACE TRIGGER trg_room_delete_archive
+            BEFORE DELETE ON ROOM
+            FOR EACH ROW
+            BEGIN
+                INSERT INTO DELETED_ITEMS (source_table, source_id, item_name, length, width, height)
+                VALUES ('ROOM', :OLD.room_id, :OLD.room_name, :OLD.length, :OLD.width, :OLD.height);
+            END;
+        """)
+
+        cursor.execute("""
+            CREATE OR REPLACE TRIGGER trg_furniture_delete_archive
+            BEFORE DELETE ON FURNITURE
+            FOR EACH ROW
+            BEGIN
+                INSERT INTO DELETED_ITEMS (source_table, source_id, item_name, length, width, height)
+                VALUES ('FURNITURE', :OLD.furniture_id, :OLD.furniture_name, :OLD.length, :OLD.width, :OLD.height);
+            END;
+        """)
+    finally:
+        cursor.close()
+
 def get_db_connection():
     try:
         dsn = oracledb.makedsn("localhost", 1521, service_name="XEPDB1")
         connection = oracledb.connect(user=db_user, password=db_password, dsn=dsn)
+        ensure_delete_archive_objects(connection)
         return connection
     except Exception as e:
         print(f"Database connection error: {e}")
@@ -79,6 +123,32 @@ def rooms():
     
     return render_template('rooms.html', rooms=rooms_data)
 
+@app.route('/rooms/delete/<int:room_id>', methods=['POST'])
+def delete_room(room_id):
+    if 'login_time' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    if not conn:
+        flash("Database connection failed.", "error")
+        return redirect(url_for('rooms'))
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM ROOM WHERE room_id = :1", (room_id,))
+        conn.commit()
+        if cursor.rowcount:
+            flash('Room deleted successfully!', 'success')
+        else:
+            flash('Room not found.', 'error')
+    except Exception as e:
+        flash(f'Error deleting room: {e}', 'error')
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('rooms'))
+
 @app.route('/furniture', methods=['GET', 'POST'])
 def furniture():
     if 'login_time' not in session: return redirect(url_for('login'))
@@ -114,6 +184,32 @@ def furniture():
     conn.close()
     
     return render_template('furniture.html', furniture=furniture_data)
+
+@app.route('/furniture/delete/<int:furniture_id>', methods=['POST'])
+def delete_furniture(furniture_id):
+    if 'login_time' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    if not conn:
+        flash("Database connection failed.", "error")
+        return redirect(url_for('furniture'))
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM FURNITURE WHERE furniture_id = :1", (furniture_id,))
+        conn.commit()
+        if cursor.rowcount:
+            flash('Furniture deleted successfully!', 'success')
+        else:
+            flash('Furniture not found.', 'error')
+    except Exception as e:
+        flash(f'Error deleting furniture: {e}', 'error')
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('furniture'))
 
 @app.route('/fit_checker', methods=['GET', 'POST'])
 def fit_checker():

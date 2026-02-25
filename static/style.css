@@ -21,6 +21,8 @@ input[type="text"], input[type="number"], select { padding: 0.5rem; border: 1px 
 .btn-primary:hover { background-color: #2980b9; }
 .btn-secondary { background-color: #95a5a6; color: white; }
 .btn-secondary:hover { background-color: #7f8c8d; }
+.btn-danger { background-color: #e74c3c; color: white; }
+.btn-danger:hover { background-color: #c0392b; }
 .mt-align { margin-top: 1.2rem; }
 .mt-2 { margin-top: 1.5rem; }
 table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
